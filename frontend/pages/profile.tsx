@@ -35,7 +35,7 @@ export default function Profile() {
   const joinedDaysAgo = Math.floor((Date.now() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
   
   // This is a placeholder - in a real app, we'd have more sophisticated streak calculation
-  const currentStreak = 3; 
+  const currentStreak: number = 3; // Add type annotation to make it a number type
 
   return (
     <Layout title="Profile | Twinglish">

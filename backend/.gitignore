@@ -1,1 +1,3 @@
-env.py
+alembic/env.py
+
+.env

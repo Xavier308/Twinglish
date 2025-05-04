@@ -36,7 +36,7 @@ twinglish/
 │   │   ├── env.py                     # Alembic environment configuration
 │   │   ├── README                     # Alembic documentation
 │   │   └── script.py.mako             # Migration template
-│   ├── .env                           # Environment variables
+│   ├── .env (Moved to the root)       # Environment variables
 │   ├── Dockerfile                     # Docker configuration for backend
 │   ├── requirements.txt               # Python dependencies
 │   └── alembic.ini                    # Alembic configuration
@@ -67,7 +67,7 @@ twinglish/
 │   ├── package.json                   # Node.js dependencies
 │   ├── next.config.js                 # Next.js configuration
 │   └── tsconfig.json                  # TypeScript configuration
-│
+│---- .env (OpenAI key, and DB)
 ├── docker-compose.yml                 # Docker Compose configuration
 ├── .gitignore                         # Git ignore rules (root)
 └── README.md                          # Project documentation

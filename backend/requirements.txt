@@ -12,6 +12,6 @@ passlib==1.7.4
 python-multipart==0.0.9
 langchain==0.1.12
 openai==1.13.3
-tiktoken==0.6.0
+#tiktoken==0.6.0
 bcrypt==4.1.2
 email-validator==2.2.0

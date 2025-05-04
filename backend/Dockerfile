@@ -1,8 +1,12 @@
-FROM python:3.13-slim
-
-# slim is more compatible than Alpine (If VSCODE mark it blue)
+FROM python:3.12-slim
 
 WORKDIR /app
+
+# Install system dependencies required for building Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 

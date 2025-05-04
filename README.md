@@ -29,25 +29,76 @@ Twinglish is a Twitter-style web application where users can post short messages
 twinglish/
 ├── backend/
 │   ├── app/
-│   │   ├── core/        # App configuration, security
-│   │   ├── db/          # Database connection, base models
-│   │   ├── models/      # SQLAlchemy models
-│   │   ├── routers/     # API routes
-│   │   ├── schemas/     # Pydantic schemas
-│   │   ├── services/    # Business logic services
-│   │   └── main.py      # FastAPI application
-│   ├── alembic/         # Database migrations
-│   ├── Dockerfile
-│   └── requirements.txt
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py              # Application configuration and settings
+│   │   │   └── security.py            # Security utilities (password hashing, JWT creation)
+│   │   ├── db/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py                # Database base configuration
+│   │   │   └── session.py             # Database session management
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py                # Base model with common fields
+│   │   │   ├── user.py                # User model
+│   │   │   └── tweet.py               # Tweet model
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py                # Authentication endpoints (/login)
+│   │   │   ├── users.py               # User endpoints (/users)
+│   │   │   └── tweets.py              # Tweet endpoints (/tweets)
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py                # User request/response schemas
+│   │   │   ├── tweet.py               # Tweet request/response schemas
+│   │   │   └── token.py               # JWT token schemas
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py                # Authentication service functions
+│   │   │   └── openai_service.py      # OpenAI API integration
+│   │   ├── __init__.py
+│   │   └── main.py                    # Main FastAPI application
+│   ├── alembic/
+│   │   ├── versions/                  # Database migration files
+│   │   │   └── (migration files)
+│   │   ├── env.py                     # Alembic environment configuration
+│   │   ├── README                     # Alembic documentation
+│   │   └── script.py.mako             # Migration template
+│   ├── .env (Moved to the root)       # Environment variables
+│   ├── Dockerfile                     # Docker configuration for backend
+│   ├── requirements.txt               # Python dependencies
+│   └── alembic.ini                    # Alembic configuration
+│
 ├── frontend/
-│   ├── components/      # Reusable React components
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/             # Utilities, API clients
-│   ├── pages/           # Next.js pages
-│   ├── public/          # Static assets
-│   ├── styles/          # Global styles
-│   └── next.config.js
-└── docker-compose.yml   # Local development setup
+│   ├── components/
+│   │   ├── Layout.tsx                 # Main layout component with header/footer
+│   │   ├── TweetCard.tsx              # Component for displaying tweets
+│   │   ├── TweetEditor.tsx            # Component for creating tweets
+│   │   └── TweetFeed.tsx              # Component for listing tweets
+│   ├── hooks/
+│   │   └── useTweets.ts               # Custom hook for tweet operations
+│   ├── lib/
+│   │   ├── api.ts                     # API utilities for making requests
+│   │   └── auth.ts                    # Authentication context and functions
+│   ├── pages/
+│   │   ├── api/                       # Next.js API routes (if needed)
+│   │   ├── _app.tsx                   # Next.js app wrapper
+│   │   ├── index.tsx                  # Home page
+│   │   ├── login.tsx                  # Login page
+│   │   ├── register.tsx               # Registration page
+│   │   └── profile.tsx                # User profile page
+│   ├── public/
+│   │   └── (static assets)            # Images, fonts, etc.
+│   ├── styles/
+│   │   └── globals.css                # Global CSS styles
+│   ├── .gitignore                     # Git ignore rules
+│   ├── package.json                   # Node.js dependencies
+│   ├── next.config.js                 # Next.js configuration
+│   └── tsconfig.json                  # TypeScript configuration
+│---- .env (OpenAI key, and DB)
+├── docker-compose.yml                 # Docker Compose configuration
+├── .gitignore                         # Git ignore rules (root)
+└── README.md                          # Project documentation
 ```
 
 ## Getting Started
@@ -168,3 +219,11 @@ npm test
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+
+## Quick commands
+```bash
+docker compose down
+docker compose build --no-cache api
+docker compose up -d
+```

@@ -10,15 +10,24 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, loading } = useAuth();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  // Use useEffect to set isClient to true once the component is mounted
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // If user is already logged in, redirect to home
   useEffect(() => {
-    if (user) {
+    console.log("Login page - Auth state:", { user, loading, isClient });
+    
+    if (user && isClient && !loading) {
+      console.log("Already logged in, redirecting to home");
       router.push('/');
     }
-  }, [user, router]);
+  }, [user, router, loading, isClient]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +35,7 @@ export default function Login() {
     setError('');
     
     try {
+      console.log("Attempting login from form submit");
       await login(username, password);
       // Redirect happens automatically in the auth context
     } catch (err) {
@@ -34,6 +44,11 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  // Don't show the login form if we're already logged in and on the client side
+  if (user && isClient && !loading) {
+    return <Layout title="Redirecting... | Twinglish"><div>Redirecting to home...</div></Layout>;
+  }
 
   return (
     <Layout title="Login | Twinglish">

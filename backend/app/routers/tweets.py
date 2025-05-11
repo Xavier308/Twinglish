@@ -1,57 +1,74 @@
 # app/routers/tweets.py
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List
+from datetime import datetime
+from typing import List, Dict, Any
+from pydantic import BaseModel
 
-from app.db.session import get_db
-from app.models.tweet import Tweet
-from app.models.user import User
-from app.schemas.tweet import Tweet as TweetSchema, TweetCreate
-from app.services.auth import get_current_user
+from app.simple_auth import get_current_user
 
 router = APIRouter()
 
-@router.post("/", response_model=TweetSchema)
-async def create_tweet(
-    tweet_in: TweetCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-) -> Tweet:
+# Define a simple tweet schema
+class TweetBase(BaseModel):
+    original_text: str
+    
+class TweetCreate(TweetBase):
+    pass
+    
+class Tweet(TweetBase):
+    id: int
+    corrected_text: str
+    explanation: str
+    created_at: str
+    user_id: int
+
+# Sample tweets for testing
+sample_tweets = [
+    {
+        "id": 1,
+        "original_text": "I thinked about going to the store yesterday but I forgeted.",
+        "corrected_text": "I thought about going to the store yesterday but I forgot.",
+        "explanation": "The past tense of 'think' is 'thought', not 'thinked'. Similarly, the past tense of 'forget' is 'forgot', not 'forgeted'.",
+        "created_at": datetime.now().isoformat(),
+        "user_id": 1
+    },
+    {
+        "id": 2,
+        "original_text": "I have been studing english for 2 years and im getting better everyday.",
+        "corrected_text": "I have been studying English for 2 years and I'm getting better every day.",
+        "explanation": "The correct spelling is 'studying' (not 'studing'), 'English' should be capitalized, and 'everyday' should be two words ('every day') in this context.",
+        "created_at": datetime.now().isoformat(),
+        "user_id": 1
+    }
+]
+
+@router.get("/", response_model=List[Tweet])
+async def read_tweets(current_user: dict = Depends(get_current_user)):
+    """
+    Get all tweets for the current user
+    """
+    # Return sample data
+    return sample_tweets
+
+@router.post("/", response_model=Tweet)
+async def create_tweet(tweet: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     """
     Create a new tweet
     """
-    # TODO: Implement OpenAI integration for correction
+    # Get the original text from request
+    original_text = tweet.get("original_text", "")
     
-    db_tweet = Tweet(
-        original_text=tweet_in.original_text,
-        corrected_text=tweet_in.original_text,  # Placeholder until OpenAI integration
-        explanation="Correction coming soon!",   # Placeholder until OpenAI integration
-        user_id=current_user.id
-    )
+    # Create a simple correction
+    new_tweet = {
+        "id": len(sample_tweets) + 1,
+        "original_text": original_text,
+        "corrected_text": original_text,  # Just echo it back for now
+        "explanation": "This is where the AI explanation would go.",
+        "created_at": datetime.now().isoformat(),
+        "user_id": current_user["id"]
+    }
     
-    db.add(db_tweet)
-    await db.commit()
-    await db.refresh(db_tweet)
+    # Add to our sample data
+    sample_tweets.append(new_tweet)
     
-    return db_tweet
-
-@router.get("/", response_model=List[TweetSchema])
-async def read_tweets(
-    skip: int = 0,
-    limit: int = 100,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-) -> List[Tweet]:
-    """
-    Get user's tweets
-    """
-    result = await db.execute(
-        select(Tweet)
-        .where(Tweet.user_id == current_user.id)
-        .order_by(Tweet.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
-    tweets = result.scalars().all()
-    return tweets
+    return new_tweet

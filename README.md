@@ -227,3 +227,25 @@ docker compose down
 docker compose build --no-cache api
 docker compose up -d
 ```
+
+Exit venv if deactivate isnt working
+```bash
+exec bash
+```
+
+Usefull for running migration inside the container
+```bash
+# Enter the API container
+docker exec -it twinglish-api-1 bash
+
+# Once inside the container
+cd /app
+python -m create_first_migration
+```
+
+This is for activating the app (backend)
+```
+docker exec -it twinglish-api-1 bash
+```
+For the Front-End
+npm run dev

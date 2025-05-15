@@ -67,6 +67,7 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                placeholder="Enter your username"
               />
             </div>
             
@@ -78,6 +79,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                placeholder="Enter your password"
               />
             </div>
             
@@ -104,7 +106,7 @@ export default function Login() {
         }
         
         .auth-card {
-          background-color: #fff;
+          background-color: var(--bg-card);
           border-radius: 8px;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           padding: 2rem;
@@ -116,11 +118,12 @@ export default function Login() {
           margin-top: 0;
           margin-bottom: 1.5rem;
           text-align: center;
+          color: var(--text-primary);
         }
         
         .error {
-          background-color: #ffebee;
-          color: #c62828;
+          background-color: var(--error-light);
+          color: var(--error-color);
           padding: 0.5rem;
           border-radius: 4px;
           margin-bottom: 1rem;
@@ -135,24 +138,33 @@ export default function Login() {
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 500;
+          color: var(--text-primary);
         }
         
         input {
           width: 100%;
           padding: 0.75rem;
           font-size: 1rem;
-          border: 1px solid #e1e8ed;
+          border: 1px solid var(--border-color);
           border-radius: 4px;
+          background-color: var(--bg-input);
+          color: var(--text-primary);
+        }
+        
+        input::placeholder {
+          color: var(--text-secondary);
+          opacity: 0.7;
         }
         
         input:focus {
           outline: none;
-          border-color: #1da1f2;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.2);
         }
         
         button {
           width: 100%;
-          background-color: #1da1f2;
+          background-color: var(--primary-color);
           color: white;
           border: none;
           border-radius: 50px;
@@ -164,11 +176,12 @@ export default function Login() {
         }
         
         button:hover:not(:disabled) {
-          background-color: #1a91da;
+          background-color: var(--primary-hover);
         }
         
         button:disabled {
-          background-color: #9ad0f9;
+          background-color: var(--primary-light);
+          opacity: 0.7;
           cursor: not-allowed;
         }
         
@@ -176,10 +189,11 @@ export default function Login() {
           text-align: center;
           margin-top: 1.5rem;
           font-size: 0.9rem;
+          color: var(--text-secondary);
         }
         
         .auth-link a {
-          color: #1da1f2;
+          color: var(--primary-color);
           text-decoration: underline;
         }
       `}</style>

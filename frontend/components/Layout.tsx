@@ -78,16 +78,27 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
               <nav className={`nav-menu ${mobileMenuOpen ? 'open' : ''}`}>
                 {user ? (
                   <div className="auth-links">
+                    {/* Theme toggle first */}
+                    <button onClick={toggleDarkMode} className="theme-toggle" aria-label="Toggle dark mode">
+                      {darkMode ? '☀️' : '🌙'}
+                    </button>
+                    
+                    {/* Logout button second */}
+                    <button onClick={logout} className="btn-link logout-btn">
+                      Logout
+                    </button>
+                    
+                    {/* Profile link last */}
                     <Link href="/profile" className="nav-link profile-link">
                       <span className="avatar">{user.username[0].toUpperCase()}</span>
                       <span className="username">{user.username}</span>
                     </Link>
-                    <button onClick={logout} className="btn-link logout-btn">
-                      Logout
-                    </button>
                   </div>
                 ) : (
                   <div className="auth-links">
+                    <button onClick={toggleDarkMode} className="theme-toggle" aria-label="Toggle dark mode">
+                      {darkMode ? '☀️' : '🌙'}
+                    </button>
                     <Link href="/login" className="nav-link">
                       Login
                     </Link>
@@ -96,9 +107,6 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
                     </Link>
                   </div>
                 )}
-                <button onClick={toggleDarkMode} className="theme-toggle" aria-label="Toggle dark mode">
-                  {darkMode ? '☀️' : '🌙'}
-                </button>
               </nav>
             </>
           )}
@@ -279,6 +287,12 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           border-radius: 20px;
         }
 
+        .auth-links {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
         .profile-link {
           display: flex;
           align-items: center;
@@ -383,8 +397,8 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           .auth-links {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
             width: 100%;
+            gap: 0.5rem;
           }
 
           .nav-link, .btn-link {

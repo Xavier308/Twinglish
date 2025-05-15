@@ -112,13 +112,14 @@ export default function Profile() {
           display: flex;
           align-items: center;
           margin-bottom: 2rem;
+          color: var(--text-primary);
         }
 
         .avatar {
           width: 80px;
           height: 80px;
           border-radius: 50%;
-          background-color: #1da1f2;
+          background-color: var(--primary-color);
           color: white;
           display: flex;
           align-items: center;
@@ -130,11 +131,12 @@ export default function Profile() {
 
         .user-info h1 {
           margin: 0 0 0.5rem 0;
+          color: var(--text-primary);
         }
 
         .email, .joined {
           margin: 0;
-          color: #657786;
+          color: var(--text-secondary);
         }
 
         .stats-container {
@@ -145,28 +147,30 @@ export default function Profile() {
         }
 
         .stat-card {
-          background-color: white;
+          background-color: var(--bg-card);
           border-radius: 8px;
           padding: 1.5rem;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           text-align: center;
+          border: 1px solid var(--border-color);
         }
 
         .stat-card h3 {
           margin-top: 0;
           margin-bottom: 1rem;
           font-size: 1rem;
-          color: #657786;
+          color: var(--text-secondary);
         }
 
         .stat-value {
           font-size: 2rem;
           font-weight: bold;
+          color: var(--text-primary);
         }
 
         .progress-bar {
           height: 8px;
-          background-color: #e1e8ed;
+          background-color: var(--bg-container);
           border-radius: 4px;
           margin-top: 1rem;
           overflow: hidden;
@@ -174,11 +178,12 @@ export default function Profile() {
 
         .progress {
           height: 100%;
-          background-color: #1da1f2;
+          background-color: var(--primary-color);
         }
 
         .achievement-section h2 {
           margin-bottom: 1rem;
+          color: var(--text-primary);
         }
 
         .achievements {
@@ -190,10 +195,11 @@ export default function Profile() {
         .achievement {
           display: flex;
           align-items: center;
-          background-color: white;
+          background-color: var(--bg-card);
           border-radius: 8px;
           padding: 1rem;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          border: 1px solid var(--border-color);
         }
 
         .achievement.locked {
@@ -209,17 +215,19 @@ export default function Profile() {
 
         .achievement-info h4 {
           margin: 0 0 0.25rem 0;
+          color: var(--text-primary);
         }
 
         .achievement-info p {
           margin: 0;
           font-size: 0.9rem;
-          color: #657786;
+          color: var(--text-secondary);
         }
 
         .loading {
           text-align: center;
           padding: 2rem;
+          color: var(--text-secondary);
         }
 
         @media (max-width: 600px) {
@@ -231,6 +239,10 @@ export default function Profile() {
           .avatar {
             margin-right: 0;
             margin-bottom: 1rem;
+          }
+          
+          .stats-container {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

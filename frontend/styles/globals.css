@@ -4,7 +4,7 @@
   --light-bg-main: #ffffff;
   --light-bg-card: #ffffff;
   --light-bg-container: #f8f9fa;
-  --light-bg-input: #ffffff;
+  --light-bg-input: #f5f8fa;  /* Slightly darker for better visibility */
   --light-border-color: #e1e8ed;
   --light-text-primary: #14171a;
   --light-text-secondary: #657786;
@@ -21,7 +21,7 @@
   --dark-bg-main: #15202b;
   --dark-bg-card: #1e2732;
   --dark-bg-container: #192734;
-  --dark-bg-input: #253341;
+  --dark-bg-input: #253341;  /* Darker input background for contrast */
   --dark-border-color: #38444d;
   --dark-text-primary: #ffffff;
   --dark-text-secondary: #8899a6;

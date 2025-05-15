@@ -155,6 +155,10 @@ export default function TweetCard({ tweet }: TweetCardProps) {
         .tweet-card.perfect .status-indicator {
           background-color: var(--success-color);
         }
+        
+        .status-text {
+          color: var(--text-secondary);
+        }
 
         .text-container {
           display: flex;
@@ -212,6 +216,7 @@ export default function TweetCard({ tweet }: TweetCardProps) {
 
         .tweet-card.needs-correction .corrected .text-content {
           background-color: var(--primary-light);
+          color: var(--text-primary);
         }
 
         .tweet-actions {

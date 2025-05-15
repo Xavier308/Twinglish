@@ -244,7 +244,7 @@ python -m create_first_migration
 ```
 
 This is for activating the app (backend)
-```
+```bash
 docker exec -it twinglish-api-1 bash
 ```
 For the Front-End

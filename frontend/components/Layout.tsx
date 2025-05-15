@@ -1,8 +1,9 @@
 // frontend/components/Layout.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../lib/auth';
+import { useRouter } from 'next/router';
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -11,45 +12,100 @@ type LayoutProps = {
 
 export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Check if user prefers dark mode
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('darkMode');
+      if (savedMode !== null) {
+        setDarkMode(savedMode === 'true');
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setDarkMode(prefersDark);
+      }
+    }
+  }, []);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', String(newMode));
+    }
+  };
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [router.pathname]);
+
+  const isHomePage = router.pathname === '/';
+  const isLoginPage = router.pathname === '/login';
+  const isRegisterPage = router.pathname === '/register';
+  const isAuthPage = isLoginPage || isRegisterPage;
 
   return (
-    <div className="layout">
+    <div className={`layout ${darkMode ? 'dark-mode' : 'light-mode'}`}>
       <Head>
         <title>{title}</title>
         <meta name="description" content="Improve your English with Twinglish" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <header>
-        <div className="container">
-          <h1 className="logo">
-            <Link href="/">Twinglish</Link>
-          </h1>
-          <nav>
-            {user ? (
-              <>
-                <Link href="/profile">
-                  {user.username}
-                </Link>
-                <button onClick={logout} className="btn-link">
-                  Logout
+      <header className={isAuthPage ? 'header-auth' : ''}>
+        <div className="container header-container">
+          <div className="logo-container">
+            <Link href="/" className="logo">
+              <span className="logo-text">Twinglish</span>
+            </Link>
+          </div>
+          
+          {!isAuthPage && (
+            <>
+              <button 
+                className="mobile-menu-button" 
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                <span className={`hamburger ${mobileMenuOpen ? 'open' : ''}`}></span>
+              </button>
+              
+              <nav className={`nav-menu ${mobileMenuOpen ? 'open' : ''}`}>
+                {user ? (
+                  <div className="auth-links">
+                    <Link href="/profile" className="nav-link profile-link">
+                      <span className="avatar">{user.username[0].toUpperCase()}</span>
+                      <span className="username">{user.username}</span>
+                    </Link>
+                    <button onClick={logout} className="btn-link logout-btn">
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <div className="auth-links">
+                    <Link href="/login" className="nav-link">
+                      Login
+                    </Link>
+                    <Link href="/register" className="nav-link register-link">
+                      Register
+                    </Link>
+                  </div>
+                )}
+                <button onClick={toggleDarkMode} className="theme-toggle" aria-label="Toggle dark mode">
+                  {darkMode ? '☀️' : '🌙'}
                 </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login">
-                  Login
-                </Link>
-                <Link href="/register">
-                  Register
-                </Link>
-              </>
-            )}
-          </nav>
+              </nav>
+            </>
+          )}
         </div>
       </header>
 
-      <main className="container">
+      <main className={`${isAuthPage ? 'auth-main' : 'container'}`}>
         {children}
       </main>
 
@@ -64,6 +120,48 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
+          transition: background-color 0.3s, color 0.3s;
+        }
+
+        .light-mode {
+          --bg-main: #ffffff;
+          --bg-card: #ffffff;
+          --bg-container: #f8f9fa;
+          --bg-input: #ffffff;
+          --border-color: #e1e8ed;
+          --text-primary: #14171a;
+          --text-secondary: #657786;
+          --text-header: #ffffff;
+          --primary-color: #1da1f2;
+          --primary-hover: #1a91da;
+          --primary-light: #e8f5fe;
+          --success-color: #4caf50;
+          --success-light: #e8f5e9;
+          --error-color: #e0245e;
+          --error-light: #ffebee;
+        }
+
+        .dark-mode {
+          --bg-main: #15202b;
+          --bg-card: #1e2732;
+          --bg-container: #192734;
+          --bg-input: #253341;
+          --border-color: #38444d;
+          --text-primary: #ffffff;
+          --text-secondary: #8899a6;
+          --text-header: #ffffff;
+          --primary-color: #1da1f2;
+          --primary-hover: #1a91da;
+          --primary-light: #1e3040;
+          --success-color: #4caf50;
+          --success-light: #1e3329;
+          --error-color: #e0245e;
+          --error-light: #3d1a2b;
+        }
+
+        .layout {
+          background-color: var(--bg-main);
+          color: var(--text-primary);
         }
 
         .container {
@@ -74,25 +172,166 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
         }
 
         header {
-          background-color: #f8f9fa;
-          border-bottom: 1px solid #e9ecef;
-          padding: 1rem 0;
+          background-color: var(--primary-color);
+          color: var(--text-header);
+          padding: 0.8rem 0;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          position: sticky;
+          top: 0;
+          z-index: 100;
         }
 
-        header .container {
+        .header-auth {
+          background-color: transparent;
+          box-shadow: none;
+          position: absolute;
+          width: 100%;
+        }
+
+        .header-container {
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
 
-        .logo {
-          margin: 0;
-          font-size: 1.5rem;
+        .logo-container {
+          display: flex;
+          align-items: center;
         }
 
-        nav {
+        .logo {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: var(--text-header);
+          text-decoration: none;
+        }
+
+        .mobile-menu-button {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--text-header);
+          cursor: pointer;
+          padding: 0.5rem;
+        }
+
+        .hamburger {
+          display: block;
+          position: relative;
+          width: 24px;
+          height: 2px;
+          background-color: var(--text-header);
+          transition: all 0.3s ease;
+        }
+
+        .hamburger::before,
+        .hamburger::after {
+          content: '';
+          position: absolute;
+          width: 24px;
+          height: 2px;
+          background-color: var(--text-header);
+          transition: all 0.3s ease;
+        }
+
+        .hamburger::before {
+          transform: translateY(-8px);
+        }
+
+        .hamburger::after {
+          transform: translateY(8px);
+        }
+
+        .hamburger.open {
+          background-color: transparent;
+        }
+
+        .hamburger.open::before {
+          transform: rotate(45deg);
+        }
+
+        .hamburger.open::after {
+          transform: rotate(-45deg);
+        }
+
+        .nav-menu {
           display: flex;
+          align-items: center;
           gap: 1rem;
+        }
+
+        .nav-link {
+          color: var(--text-header);
+          text-decoration: none;
+          font-weight: 500;
+          padding: 0.5rem;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .register-link {
+          background-color: rgba(255, 255, 255, 0.2);
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+        }
+
+        .profile-link {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background-color: rgba(255, 255, 255, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+        }
+
+        .btn-link {
+          background: none;
+          border: none;
+          color: var(--text-header);
+          cursor: pointer;
+          font-size: 1rem;
+          padding: 0.5rem;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .btn-link:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .logout-btn {
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          padding: 0.4rem 0.8rem;
+          border-radius: 20px;
+        }
+
+        .theme-toggle {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1.2rem;
+          padding: 0.5rem;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+        }
+
+        .theme-toggle:hover {
+          background-color: rgba(255, 255, 255, 0.1);
         }
 
         main {
@@ -100,26 +339,72 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           padding: 2rem 0;
         }
 
-        footer {
-          background-color: #f8f9fa;
-          border-top: 1px solid #e9ecef;
-          padding: 1rem 0;
-          text-align: center;
+        .auth-main {
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
 
-        .btn-link {
-          background: none;
-          border: none;
-          font-size: 1rem;
-          cursor: pointer;
-          color: #0070f3;
-          padding: 0;
+        footer {
+          background-color: var(--bg-container);
+          color: var(--text-secondary);
+          border-top: 1px solid var(--border-color);
+          padding: 1rem 0;
+          text-align: center;
+          font-size: 0.9rem;
         }
 
         @media (max-width: 768px) {
-          header .container {
+          .mobile-menu-button {
+            display: block;
+          }
+
+          .nav-menu {
+            position: fixed;
+            top: 60px;
+            right: -100%;
+            width: 70%;
+            max-width: 300px;
+            height: calc(100vh - 60px);
+            background-color: var(--bg-card);
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
             flex-direction: column;
-            gap: 0.5rem;
+            align-items: flex-start;
+            padding: 1rem;
+            transition: right 0.3s ease;
+            z-index: 99;
+          }
+
+          .nav-menu.open {
+            right: 0;
+          }
+
+          .auth-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+          }
+
+          .nav-link, .btn-link {
+            color: var(--text-primary);
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem;
+          }
+
+          .nav-link:hover, .btn-link:hover {
+            background-color: var(--bg-container);
+          }
+
+          .logo-container {
+            flex: 1;
+            justify-content: center;
+          }
+
+          main {
+            padding: 1.5rem 0;
           }
         }
       `}</style>

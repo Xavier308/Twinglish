@@ -9,17 +9,23 @@ interface TweetCardProps {
 export default function TweetCard({ tweet }: TweetCardProps) {
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Helper function to highlight differences
-  const highlightDifferences = (original: string, corrected: string) => {
-    if (!original || !corrected) return '';
-    
-    // Simple difference highlighting
-    // This could be improved with a proper diff algorithm in the future
-    return corrected;
+  // Helper function to determine if the original text needs correction
+  const needsCorrection = () => {
+    return tweet.original_text !== tweet.corrected_text;
+  };
+
+  // Format the date
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    } catch (e) {
+      return dateString;
+    }
   };
 
   return (
-    <div className="tweet-card">
+    <div className={`tweet-card ${needsCorrection() ? '' : 'no-errors'}`}>
       <div className="text-container">
         <div className="original">
           <h4>Original</h4>
@@ -28,7 +34,9 @@ export default function TweetCard({ tweet }: TweetCardProps) {
         
         <div className="corrected">
           <h4>Corrected</h4>
-          <p>{highlightDifferences(tweet.original_text, tweet.corrected_text)}</p>
+          <p className={needsCorrection() ? 'has-corrections' : 'no-corrections'}>
+            {tweet.corrected_text}
+          </p>
         </div>
       </div>
       
@@ -42,14 +50,18 @@ export default function TweetCard({ tweet }: TweetCardProps) {
         
         {showExplanation && (
           <div className="explanation-content">
-            <p>{tweet.explanation}</p>
+            {needsCorrection() ? (
+              <p>{tweet.explanation}</p>
+            ) : (
+              <p>Great job! Your English is perfect in this tweet.</p>
+            )}
           </div>
         )}
       </div>
       
       <div className="meta">
         <span className="date">
-          {new Date(tweet.created_at).toLocaleDateString()}
+          {formatDate(tweet.created_at)}
         </span>
       </div>
 
@@ -61,6 +73,11 @@ export default function TweetCard({ tweet }: TweetCardProps) {
           padding: 1rem;
           margin-bottom: 1rem;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
+        }
+
+        .tweet-card.no-errors {
+          border-left: 4px solid #4caf50;
         }
 
         .text-container {
@@ -94,6 +111,17 @@ export default function TweetCard({ tweet }: TweetCardProps) {
           margin: 0;
           line-height: 1.5;
           word-break: break-word;
+          padding: 0.5rem;
+          border-radius: 4px;
+          background-color: #f8f9fa;
+        }
+
+        .has-corrections {
+          background-color: #e8f5e9;
+        }
+
+        .no-corrections {
+          background-color: #f1f8e9;
         }
 
         .explanation {
@@ -108,6 +136,12 @@ export default function TweetCard({ tweet }: TweetCardProps) {
           font-size: 0.9rem;
           cursor: pointer;
           padding: 0;
+          transition: color 0.2s;
+        }
+
+        .explanation-toggle:hover {
+          color: #0c8de4;
+          text-decoration: underline;
         }
 
         .explanation-content {
@@ -116,6 +150,7 @@ export default function TweetCard({ tweet }: TweetCardProps) {
           background-color: #f8f9fa;
           border-radius: 4px;
           font-size: 0.9rem;
+          border-left: 4px solid #1da1f2;
         }
 
         .meta {

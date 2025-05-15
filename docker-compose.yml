@@ -17,6 +17,22 @@ services:
       - db
       - redis
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    command: npm run dev
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
@@ -28,6 +44,7 @@ services:
       - POSTGRES_DB=twinglish
     ports:
       - "5433:5432"  # Changed host port from 5432 to 5433
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -35,6 +52,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -45,6 +63,7 @@ services:
       - "5050:80"
     depends_on:
       - db
+    restart: unless-stopped
 
 volumes:
   postgres_data:

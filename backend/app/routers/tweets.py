@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from pydantic import BaseModel
 
 from app.simple_auth import get_current_user
+from app.services.openai_service import correct_tweet
 
 router = APIRouter()
 
@@ -48,27 +49,45 @@ async def read_tweets(current_user: dict = Depends(get_current_user)):
     Get all tweets for the current user
     """
     # Return sample data
-    return sample_tweets
+    user_tweets = [t for t in sample_tweets if t["user_id"] == current_user["id"]]
+    return user_tweets
 
 @router.post("/", response_model=Tweet)
 async def create_tweet(tweet: Dict[str, Any], current_user: dict = Depends(get_current_user)):
     """
-    Create a new tweet
+    Create a new tweet and correct it using OpenAI
     """
     # Get the original text from request
     original_text = tweet.get("original_text", "")
     
-    # Create a simple correction
-    new_tweet = {
-        "id": len(sample_tweets) + 1,
-        "original_text": original_text,
-        "corrected_text": original_text,  # Just echo it back for now
-        "explanation": "This is where the AI explanation would go.",
-        "created_at": datetime.now().isoformat(),
-        "user_id": current_user["id"]
-    }
+    if not original_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tweet text cannot be empty"
+        )
     
-    # Add to our sample data
-    sample_tweets.append(new_tweet)
-    
-    return new_tweet
+    try:
+        # Use OpenAI service to correct the text and get explanation
+        corrected_text, explanation = await correct_tweet(original_text)
+        
+        # Create new tweet with the corrected text
+        new_id = max([t["id"] for t in sample_tweets], default=0) + 1
+        new_tweet = {
+            "id": new_id,
+            "original_text": original_text,
+            "corrected_text": corrected_text,
+            "explanation": explanation,
+            "created_at": datetime.now().isoformat(),
+            "user_id": current_user["id"]
+        }
+        
+        # Add to sample data
+        sample_tweets.append(new_tweet)
+        
+        return new_tweet
+    except Exception as e:
+        print(f"Error creating tweet: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create tweet: {str(e)}"
+        )

@@ -245,7 +245,11 @@ python -m create_first_migration
 
 This is for activating the app (backend)
 ```bash
+docker compose up -d
+
 docker exec -it twinglish-api-1 bash
 ```
 For the Front-End
-npm run dev
+```bash
+sudo npm run dev
+```

@@ -72,21 +72,33 @@ export function useTweets() {
           throw new Error('Failed to fetch tweets');
         }
         
-        const data = await response.json();
+        let data = await response.json();
+        
+        // Sort tweets by created_at, newest first
+        data.sort((a: Tweet, b: Tweet) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
         console.log("Tweets fetched successfully:", data);
         setTweets(data);
         setOfflineMode(false);
       } catch (fetchError) {
         console.warn('Falling back to mock data:', fetchError);
         // Fall back to mock data
-        setTweets(MOCK_TWEETS);
+        // Sort MOCK_TWEETS by created_at, newest first
+        const sortedMockTweets = [...MOCK_TWEETS].sort(
+          (a: Tweet, b: Tweet) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setTweets(sortedMockTweets);
         setOfflineMode(true);
       }
     } catch (err) {
       console.error('Error in tweet handling:', err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
       // Fallback to mock data even in case of errors
-      setTweets(MOCK_TWEETS);
+      // Sort MOCK_TWEETS by created_at, newest first
+      const sortedMockTweets = [...MOCK_TWEETS].sort(
+        (a: Tweet, b: Tweet) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setTweets(sortedMockTweets);
       setOfflineMode(true);
     } finally {
       setIsLoading(false);
@@ -125,7 +137,7 @@ export function useTweets() {
           user_id: 1
         };
         
-        // Update tweets list
+        // Update tweets list - correctly add to beginning of array
         setTweets(prevTweets => [newTweet, ...prevTweets]);
         
         return newTweet;
@@ -159,7 +171,7 @@ export function useTweets() {
         const newTweet = await response.json();
         console.log("Tweet created successfully:", newTweet);
         
-        // Update tweets list
+        // Update tweets list - ensure it's added to the beginning
         setTweets(prevTweets => [newTweet, ...prevTweets]);
         
         return newTweet;

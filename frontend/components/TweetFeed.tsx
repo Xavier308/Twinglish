@@ -1,11 +1,16 @@
 // frontend/components/TweetFeed.tsx
 import { useEffect, useState } from 'react';
-import { useTweets } from '../hooks/useTweets';
+import { useTweets, Tweet } from '../hooks/useTweets';
 import TweetCard from './TweetCard';
 
 export default function TweetFeed() {
   const { tweets, isLoading, error, refreshTweets, offlineMode } = useTweets();
   const [filter, setFilter] = useState<'all' | 'perfect' | 'corrections'>('all');
+  
+  // Create a sorted copy of tweets, newest first
+  const sortedTweets = [...tweets].sort((a: Tweet, b: Tweet) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   // Periodically refresh tweets when not in offline mode
   useEffect(() => {
@@ -18,20 +23,20 @@ export default function TweetFeed() {
     return () => clearInterval(interval);
   }, [refreshTweets, offlineMode]);
 
-  // Filter tweets based on selected filter
+  // Filter tweets based on selected filter - using sortedTweets
   const filteredTweets = () => {
-    if (filter === 'all') return tweets;
-    if (filter === 'perfect') return tweets.filter(t => t.original_text === t.corrected_text);
-    return tweets.filter(t => t.original_text !== t.corrected_text);
+    if (filter === 'all') return sortedTweets;
+    if (filter === 'perfect') return sortedTweets.filter(t => t.original_text === t.corrected_text);
+    return sortedTweets.filter(t => t.original_text !== t.corrected_text);
   };
 
-  // Get the count of tweets for each filter
+  // Get the count of tweets for each filter - using sortedTweets
   const getCounts = () => {
-    const perfectCount = tweets.filter(t => t.original_text === t.corrected_text).length;
-    const correctionsCount = tweets.filter(t => t.original_text !== t.corrected_text).length;
+    const perfectCount = sortedTweets.filter(t => t.original_text === t.corrected_text).length;
+    const correctionsCount = sortedTweets.filter(t => t.original_text !== t.corrected_text).length;
     
     return {
-      all: tweets.length,
+      all: sortedTweets.length,
       perfect: perfectCount,
       corrections: correctionsCount
     };
@@ -79,7 +84,7 @@ export default function TweetFeed() {
         )}
       </div>
       
-      {tweets.length > 0 && (
+      {sortedTweets.length > 0 && (
         <div className="filter-bar">
           <button 
             className={`filter-button ${filter === 'all' ? 'active' : ''}`}
@@ -102,7 +107,7 @@ export default function TweetFeed() {
         </div>
       )}
       
-      {tweets.length === 0 ? (
+      {sortedTweets.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📝</div>
           <h3>No posts yet</h3>
@@ -153,8 +158,13 @@ export default function TweetFeed() {
           margin-bottom: 1.5rem;
           border-bottom: 1px solid var(--border-color);
           overflow-x: auto;
-          scrollbar-width: thin;
+          scrollbar-width: none; /* Hide scrollbar for Firefox */
+          -ms-overflow-style: none; /* Hide scrollbar for IE and Edge */
           -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-bar::-webkit-scrollbar {
+          display: none; /* Hide scrollbar for Chrome, Safari and Opera */
         }
 
         .filter-button {

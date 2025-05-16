@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import { useAuth } from '../lib/auth';
 import { useTweets } from '../hooks/useTweets';
+import Link from 'next/link';
+
 
 export default function Profile() {
   const { user, loading } = useAuth();
@@ -40,6 +42,12 @@ export default function Profile() {
   return (
     <Layout title="Profile | Twinglish">
       <div className="profile-page">
+        <div className="navigation-bar">
+          <Link href="/" className="back-home-link">
+            <span className="back-arrow">←</span> Home
+          </Link>
+        </div>
+
         <div className="profile-header">
           <div className="avatar">
             {user.username.charAt(0).toUpperCase()}
@@ -228,6 +236,29 @@ export default function Profile() {
           text-align: center;
           padding: 2rem;
           color: var(--text-secondary);
+        }
+
+        .navigation-bar {
+          margin-bottom: 1.5rem;
+        }
+        
+        .back-home-link {
+          display: inline-flex;
+          align-items: center;
+          color: var(--primary-color);
+          text-decoration: none;
+          padding: 0.5rem;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+        
+        .back-home-link:hover {
+          background-color: var(--primary-light);
+        }
+        
+        .back-arrow {
+          margin-right: 0.5rem;
+          font-size: 1.2rem;
         }
 
         @media (max-width: 600px) {

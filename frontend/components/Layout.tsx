@@ -79,20 +79,75 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
                 {user ? (
                   <div className="auth-links">
                     {/* Theme toggle first */}
-                    <button onClick={toggleDarkMode} className="theme-toggle" aria-label="Toggle dark mode">
-                      {darkMode ? '☀️' : '🌙'}
+                    <button 
+                      onClick={toggleDarkMode} 
+                      className="theme-toggle" 
+                      aria-label="Toggle dark mode"
+                      title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        viewBox="0 0 24 24" 
+                        width="20" 
+                        height="20" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        {darkMode ? (
+                          // Sun icon for dark mode
+                          <>
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                          </>
+                        ) : (
+                          // Moon icon for light mode
+                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        )}
+                      </svg>
                     </button>
                     
-                    {/* Logout button second */}
-                    <button onClick={logout} className="btn-link logout-btn">
+                    {/* Profile link now second */}
+                    <Link 
+                      href="/profile" 
+                      className="nav-link profile-link" 
+                      title={`Profile: ${user.username}`}
+                    >
+                      <span className="avatar">
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          viewBox="0 0 24 24" 
+                          width="20" 
+                          height="20" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </span>
+                    </Link>
+                    
+                    {/* Logout button last */}
+                    <button 
+                      onClick={logout} 
+                      className="btn-link logout-btn"
+                      title="Logout"
+                    >
                       Logout
                     </button>
-                    
-                    {/* Profile link last */}
-                    <Link href="/profile" className="nav-link profile-link">
-                      <span className="avatar">{user.username[0].toUpperCase()}</span>
-                      <span className="username">{user.username}</span>
-                    </Link>
                   </div>
                 ) : (
                   <div className="auth-links">
@@ -287,27 +342,41 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           border-radius: 20px;
         }
 
+        /* Updated profile link styles */
         .auth-links {
           display: flex;
           align-items: center;
           gap: 1rem;
+          margin-left: auto; /* Push to the right */
         }
 
         .profile-link {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          justify-content: center;
+          padding: 0.5rem;
+          border-radius: 50%;
+          background-color: rgba(255, 255, 255, 0.1);
+          transition: background-color 0.2s;
+        }
+
+        .profile-link:hover {
+          background-color: var(--primary-hover);
         }
 
         .avatar {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background-color: rgba(255, 255, 255, 0.2);
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: bold;
+          color: var(--text-header);
+        }
+
+        .person-icon {
+          font-size: 1.2rem; /* Adjust size as needed */
         }
 
         .btn-link {
@@ -335,12 +404,12 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           background: none;
           border: none;
           cursor: pointer;
-          font-size: 1.2rem;
           padding: 0.5rem;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
+          color: var(--text-header);
           transition: background-color 0.2s;
         }
 

@@ -1,6 +1,6 @@
 # app/routers/tweets.py
 from fastapi import APIRouter, Depends, HTTPException, status
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 from pydantic import BaseModel
 
@@ -30,7 +30,7 @@ sample_tweets = [
         "original_text": "I thinked about going to the store yesterday but I forgeted.",
         "corrected_text": "I thought about going to the store yesterday but I forgot.",
         "explanation": "The past tense of 'think' is 'thought', not 'thinked'. Similarly, the past tense of 'forget' is 'forgot', not 'forgeted'.",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(), # Store in UTC
         "user_id": 1
     },
     {
@@ -71,13 +71,14 @@ async def create_tweet(tweet: Dict[str, Any], current_user: dict = Depends(get_c
         corrected_text, explanation = await correct_tweet(original_text)
         
         # Create new tweet with the corrected text
+        # Store in ISO 8601 format with UTC timezone explicitly marked
         new_id = max([t["id"] for t in sample_tweets], default=0) + 1
         new_tweet = {
             "id": new_id,
             "original_text": original_text,
             "corrected_text": corrected_text,
             "explanation": explanation,
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),  # ISO 8601 format with Z for UTC
             "user_id": current_user["id"]
         }
         

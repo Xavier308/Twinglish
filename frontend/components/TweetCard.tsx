@@ -26,21 +26,37 @@ export default function TweetCard({ tweet }: TweetCardProps) {
   // Format the date
   const formatDate = (dateString: string) => {
     try {
+      // Parse the ISO 8601 string to Date object
       const date = new Date(dateString);
       
-      // Format as "Today, 2:30 PM" if today
-      const now = new Date();
-      if (date.toDateString() === now.toDateString()) {
-        return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.error("Invalid date string:", dateString);
+        return dateString;
       }
       
-      // Format as "May 15, 2:30 PM" if this year
+      // For today's dates
+      const now = new Date();
+      const isToday = date.getDate() === now.getDate() &&
+                      date.getMonth() === now.getMonth() &&
+                      date.getFullYear() === now.getFullYear();
+      
+      if (isToday) {
+        return `Today, ${date.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        })}`;
+      }
+      
+      // For dates this year
       if (date.getFullYear() === now.getFullYear()) {
-        return date.toLocaleString([], { 
-          month: 'short', 
+        return date.toLocaleString([], {
+          month: 'short',
           day: 'numeric',
-          hour: '2-digit', 
-          minute: '2-digit'
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
         });
       }
       
@@ -50,9 +66,11 @@ export default function TweetCard({ tweet }: TweetCardProps) {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: true
       });
     } catch (e) {
+      console.error("Error formatting date:", e);
       return dateString;
     }
   };

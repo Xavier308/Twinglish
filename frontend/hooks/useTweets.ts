@@ -128,21 +128,22 @@ export function useTweets() {
           explanation = "'Everyday' (one word) is an adjective meaning 'ordinary'. You need 'every day' (two words) when referring to each day.";
         }
         
+        // Create with consistent ISO 8601 format
         const newTweet: Tweet = {
           id: Math.max(0, ...tweets.map(t => t.id)) + 1,
           original_text: originalText,
           corrected_text: correctedText,
           explanation: explanation,
-          created_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),  // This creates proper ISO 8601 format
           user_id: 1
         };
         
-        // Update tweets list - correctly add to beginning of array
+        // Update tweets list
         setTweets(prevTweets => [newTweet, ...prevTweets]);
         
         return newTweet;
       }
-      
+            
       // Online mode - try to call API
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('authToken');

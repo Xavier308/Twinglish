@@ -24,24 +24,7 @@ class Tweet(TweetBase):
     user_id: int
 
 # Sample tweets for testing
-sample_tweets = [
-    {
-        "id": 1,
-        "original_text": "I thinked about going to the store yesterday but I forgeted.",
-        "corrected_text": "I thought about going to the store yesterday but I forgot.",
-        "explanation": "The past tense of 'think' is 'thought', not 'thinked'. Similarly, the past tense of 'forget' is 'forgot', not 'forgeted'.",
-        "created_at": datetime.now(timezone.utc).isoformat(), # Store in UTC
-        "user_id": 1
-    },
-    {
-        "id": 2,
-        "original_text": "I have been studing english for 2 years and im getting better everyday.",
-        "corrected_text": "I have been studying English for 2 years and I'm getting better every day.",
-        "explanation": "The correct spelling is 'studying' (not 'studing'), 'English' should be capitalized, and 'everyday' should be two words ('every day') in this context.",
-        "created_at": datetime.now().isoformat(),
-        "user_id": 1
-    }
-]
+sample_tweets = []
 
 @router.get("/", response_model=List[Tweet])
 async def read_tweets(current_user: dict = Depends(get_current_user)):

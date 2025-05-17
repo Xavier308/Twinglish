@@ -2,15 +2,30 @@
 import { useEffect, useState } from 'react';
 import { useTweets, Tweet } from '../hooks/useTweets';
 import TweetCard from './TweetCard';
+import Pagination from './Pagination';
+import PageSizeSelector from './PageSizeSelector';
 
 export default function TweetFeed() {
-  const { tweets, isLoading, error, refreshTweets, offlineMode } = useTweets();
-  const [filter, setFilter] = useState<'all' | 'perfect' | 'corrections'>('all');
+  const { 
+    tweets, 
+    isLoading, 
+    error, 
+    refreshTweets, 
+    offlineMode,
+    currentPage,
+    totalPages,
+    changePage,
+    tweetCounts,
+    tweetsPerPage,
+    setTweetsPerPage
+  } = useTweets();
   
-  // Create a sorted copy of tweets, newest first
-  const sortedTweets = [...tweets].sort((a: Tweet, b: Tweet) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  const [filter, setFilter] = useState<'all' | 'perfect' | 'corrections'>('all');
+  const [filteredTweets, setFilteredTweets] = useState<Tweet[]>([]);
+  const [filteredTotalPages, setFilteredTotalPages] = useState(1);
+  
+  // Create a sorted copy of tweets, newest first (already sorted from backend)
+  const sortedTweets = tweets;
 
   // Periodically refresh tweets when not in offline mode
   useEffect(() => {
@@ -23,26 +38,67 @@ export default function TweetFeed() {
     return () => clearInterval(interval);
   }, [refreshTweets, offlineMode]);
 
-  // Filter tweets based on selected filter - using sortedTweets
-  const filteredTweets = () => {
-    if (filter === 'all') return sortedTweets;
-    if (filter === 'perfect') return sortedTweets.filter(t => t.original_text === t.corrected_text);
-    return sortedTweets.filter(t => t.original_text !== t.corrected_text);
-  };
-
-  // Get the count of tweets for each filter - using sortedTweets
-  const getCounts = () => {
-    const perfectCount = sortedTweets.filter(t => t.original_text === t.corrected_text).length;
-    const correctionsCount = sortedTweets.filter(t => t.original_text !== t.corrected_text).length;
+  // Apply filtering
+  useEffect(() => {
+    let filtered = [...sortedTweets];
     
-    return {
-      all: sortedTweets.length,
-      perfect: perfectCount,
-      corrections: correctionsCount
-    };
+    if (filter === 'perfect') {
+      filtered = sortedTweets.filter(t => t.original_text === t.corrected_text);
+    } else if (filter === 'corrections') {
+      filtered = sortedTweets.filter(t => t.original_text !== t.corrected_text);
+    }
+    
+    setFilteredTweets(filtered);
+    
+    // Calculate total pages for filtered tweets
+    const tweetsPerPage = 10;
+    const totalFilteredPages = Math.max(1, Math.ceil(filtered.length / tweetsPerPage));
+    setFilteredTotalPages(totalFilteredPages);
+  }, [sortedTweets, filter]);
+
+  // Get the count of tweets for each category
+  const counts = {
+    all: tweetCounts.total,
+    perfect: tweetCounts.perfect,
+    corrections: tweetCounts.corrections
+  };
+  
+  // When filter changes, go back to page 1
+  useEffect(() => {
+    // Only trigger a page change if we're not already on page 1
+    if (currentPage !== 1) {
+      changePage(1);
+    }
+  }, [filter, changePage, currentPage]);
+
+  // Update filteredTotalPages when tweetsPerPage changes
+  useEffect(() => {
+    const totalFilteredTweets = filter === 'all' 
+      ? tweetCounts.total
+      : filter === 'perfect' 
+        ? tweetCounts.perfect 
+        : tweetCounts.corrections;
+      
+    setFilteredTotalPages(Math.max(1, Math.ceil(totalFilteredTweets / tweetsPerPage)));
+  }, [filter, tweetCounts, tweetsPerPage]);
+  
+  // Go to next page
+  const goToNextPage = () => {
+    if (currentPage < filteredTotalPages) {
+      changePage(currentPage + 1);
+      // Scroll to top of tweet feed when changing pages
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const counts = getCounts();
+  // Go to previous page
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      changePage(currentPage - 1);
+      // Scroll to top of tweet feed when changing pages
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -77,14 +133,23 @@ export default function TweetFeed() {
       <div className="feed-header">
         <h2>Your Practice Posts</h2>
         
-        {offlineMode && (
-          <div className="offline-badge">
-            Offline Mode
-          </div>
-        )}
+        <div className="feed-controls">
+          {offlineMode && (
+            <div className="offline-badge">
+              Offline Mode
+            </div>
+          )}
+          
+          {counts.all > 0 && (
+            <PageSizeSelector 
+              currentPageSize={tweetsPerPage}
+              onPageSizeChange={setTweetsPerPage}
+            />
+          )}
+        </div>
       </div>
       
-      {sortedTweets.length > 0 && (
+      {counts.all > 0 && (
         <div className="filter-bar">
           <button 
             className={`filter-button ${filter === 'all' ? 'active' : ''}`}
@@ -107,22 +172,32 @@ export default function TweetFeed() {
         </div>
       )}
       
-      {sortedTweets.length === 0 ? (
+      {counts.all === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📝</div>
           <h3>No posts yet</h3>
           <p>Write your first post in English above and get instant feedback!</p>
         </div>
-      ) : filteredTweets().length === 0 ? (
+      ) : filteredTweets.length === 0 ? (
         <div className="empty-filter-state">
           <p>No posts match the selected filter. Try a different filter.</p>
         </div>
       ) : (
-        <div className="tweets-list">
-          {filteredTweets().map((tweet) => (
-            <TweetCard key={tweet.id} tweet={tweet} />
-          ))}
-        </div>
+        <>
+          <div className="tweets-list">
+            {filteredTweets.map((tweet) => (
+              <TweetCard key={tweet.id} tweet={tweet} />
+            ))}
+          </div>
+          
+          {filteredTotalPages > 1 && (
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={filteredTotalPages}
+              onPageChange={changePage}
+            />
+          )}
+        </>
       )}
 
       <style jsx>{`
@@ -135,6 +210,12 @@ export default function TweetFeed() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 1.25rem;
+        }
+        
+        .feed-controls {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
         }
 
         h2 {
@@ -325,15 +406,21 @@ export default function TweetFeed() {
         }
 
         .tweets-list {
-          margin-bottom: 1rem;
+          margin-bottom: 1.5rem;
         }
 
         @media (max-width: 640px) {
           .feed-header {
             flex-direction: column;
             align-items: flex-start;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+          }
+          
+          .feed-controls {
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 0.75rem;
           }
           
           .filter-bar {

@@ -1,7 +1,7 @@
 # app/routers/tweets.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
 from app.simple_auth import get_current_user
@@ -27,13 +27,24 @@ class Tweet(TweetBase):
 sample_tweets = []
 
 @router.get("/", response_model=List[Tweet])
-async def read_tweets(current_user: dict = Depends(get_current_user)):
+async def read_tweets(
+    current_user: dict = Depends(get_current_user),
+    skip: int = Query(0, ge=0, description="Number of tweets to skip (for pagination)"),
+    limit: int = Query(10, ge=1, le=100, description="Number of tweets to return (page size)")
+):
     """
-    Get all tweets for the current user
+    Get tweets for the current user with pagination support
     """
-    # Return sample data
+    # Filter tweets for current user
     user_tweets = [t for t in sample_tweets if t["user_id"] == current_user["id"]]
-    return user_tweets
+    
+    # Sort tweets by created_at, newest first
+    user_tweets.sort(key=lambda x: x["created_at"], reverse=True)
+    
+    # Apply pagination
+    paginated_tweets = user_tweets[skip:skip + limit]
+    
+    return paginated_tweets
 
 @router.post("/", response_model=Tweet)
 async def create_tweet(tweet: Dict[str, Any], current_user: dict = Depends(get_current_user)):
@@ -75,3 +86,19 @@ async def create_tweet(tweet: Dict[str, Any], current_user: dict = Depends(get_c
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create tweet: {str(e)}"
         )
+
+@router.get("/count", response_model=Dict[str, int])
+async def get_tweet_count(current_user: dict = Depends(get_current_user)):
+    """
+    Get the count of tweets for the current user, useful for pagination
+    """
+    user_tweets = [t for t in sample_tweets if t["user_id"] == current_user["id"]]
+    
+    perfect_count = len([t for t in user_tweets if t["original_text"] == t["corrected_text"]])
+    corrections_count = len(user_tweets) - perfect_count
+    
+    return {
+        "total": len(user_tweets),
+        "perfect": perfect_count,
+        "corrections": corrections_count
+    }

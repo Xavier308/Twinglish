@@ -249,7 +249,10 @@ docker compose up -d
 
 docker exec -it twinglish-api-1 bash
 ```
-For the Front-End
+For the Front-End  
 ```bash
 sudo npm run dev
 ```
+I have to use sudo because it seems there is a problem with file authorization
+
+Hard reset to clean browser's cache: CTRL+F5 

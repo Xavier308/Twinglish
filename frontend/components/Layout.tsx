@@ -167,6 +167,26 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           )}
         </div>
       </header>
+      <style jsx global>{`
+        .logo-container {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          position: relative !important;
+          z-index: 1000 !important;
+        }
+        
+        .logo, .logo-text {
+          display: inline-block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          color: white !important;
+          font-size: 1.9rem !important;   /* Just slightly larger */
+          font-weight: 700 !important;    /* Keep the original weight */
+          letter-spacing: 0.5px !important;
+          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+        }
+      `}</style>
 
       <main className={`${isAuthPage ? 'auth-main' : 'container'}`}>
         {children}
@@ -263,10 +283,16 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
         }
 
         .logo {
-          font-size: 1.5rem;
-          font-weight: bold;
+          font-size: 1.8rem;
+          font-weight: 700;
           color: var(--text-header);
           text-decoration: none;
+          letter-spacing: 0.5px;
+          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-text {
+          font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         .mobile-menu-button {
@@ -484,6 +510,9 @@ export default function Layout({ children, title = 'Twinglish' }: LayoutProps) {
           .logo-container {
             flex: 1;
             justify-content: center;
+          }
+          .logo {
+            font-size: 1.6rem;
           }
 
           main {

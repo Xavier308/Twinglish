@@ -10,11 +10,35 @@ export interface Tweet {
   user_id: number;
 }
 
+export interface TweetCounts {
+  total: number;
+  perfect: number;
+  corrections: number;
+}
+
 export function useTweets() {
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [offlineMode, setOfflineMode] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tweetsPerPage, setTweetsPerPageState] = useState(() => {
+    // Try to get the value from localStorage on initial load
+    if (typeof window !== 'undefined') {
+      const savedValue = localStorage.getItem('tweetsPerPage');
+      if (savedValue) {
+        const parsed = parseInt(savedValue, 10);
+        if ([5, 10, 20, 50].includes(parsed)) {
+          return parsed;
+        }
+      }
+    }
+    return 10; // Default value
+  });
+  const [totalTweets, setTotalTweets] = useState(0);
+  const [tweetCounts, setTweetCounts] = useState<TweetCounts>({ total: 0, perfect: 0, corrections: 0 });
 
   // Clear any localStorage cached tweets on first load
   useEffect(() => {
@@ -33,10 +57,48 @@ export function useTweets() {
     
     // Now fetch tweets from server
     fetchTweets();
+    fetchTweetCounts();
   }, []);
 
-  // Function to fetch tweets
-  const fetchTweets = async () => {
+  // Function to fetch tweet counts
+  const fetchTweetCounts = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+      
+      try {
+        const response = await fetch(`${apiUrl}/api/v1/tweets/count`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch tweet counts');
+        }
+        
+        const counts = await response.json();
+        setTweetCounts(counts);
+        setTotalTweets(counts.total);
+      } catch (fetchError) {
+        console.warn('API fetch error for counts:', fetchError);
+        setOfflineMode(true);
+      }
+    } catch (err) {
+      console.error('Error fetching tweet counts:', err);
+    }
+  };
+
+  // Function to fetch tweets with pagination
+  const fetchTweets = async (page: number = 1) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -44,21 +106,23 @@ export function useTweets() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('authToken');
       
-      console.log("Fetching tweets with token:", token ? "exists" : "does not exist");
+      console.log(`Fetching tweets for page ${page}, tweets per page: ${tweetsPerPage}`);
       
       if (!token) {
         throw new Error('Not authenticated');
       }
       
       try {
-        // Try to fetch from API
-        const response = await fetch(`${apiUrl}/api/v1/tweets/`, {
+        // Calculate skip based on page and limit
+        const skip = (page - 1) * tweetsPerPage;
+        
+        // Try to fetch from API with pagination parameters
+        const response = await fetch(`${apiUrl}/api/v1/tweets/?skip=${skip}&limit=${tweetsPerPage}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          // Add cache control to prevent browser caching
           cache: 'no-store',
           signal: AbortSignal.timeout(5000)
         });
@@ -69,10 +133,10 @@ export function useTweets() {
         
         let data = await response.json();
         
-        // Sort tweets by created_at, newest first
-        data.sort((a: Tweet, b: Tweet) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        // Update current page
+        setCurrentPage(page);
         
-        console.log("Tweets fetched successfully:", data);
+        console.log(`Fetched ${data.length} tweets for page ${page}`);
         setTweets(data);
         setOfflineMode(false);
       } catch (fetchError) {
@@ -92,6 +156,38 @@ export function useTweets() {
     }
   };
 
+  // Change page function
+  const changePage = (page: number) => {
+    if (page < 1) page = 1;
+    const maxPages = Math.ceil(totalTweets / tweetsPerPage);
+    if (page > maxPages) page = maxPages;
+    
+    fetchTweets(page);
+  };
+
+  // Function to set tweets per page
+  const setTweetsPerPage = (count: number) => {
+    // Valid values: 5, 10, 20, 50
+    if (![5, 10, 20, 50].includes(count)) {
+      count = 10; // Default to 10 if invalid
+    }
+    
+    // Store the value in localStorage for persistence
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('tweetsPerPage', count.toString());
+    }
+    
+    // Update the state
+    setTweetsPerPageState(count);
+    
+    // Recalculate current page to keep the view consistent
+    const newTotalPages = Math.ceil(totalTweets / count);
+    const newPage = Math.min(currentPage, newTotalPages);
+    
+    // Fetch tweets with new pagination
+    fetchTweets(newPage);
+  };
+
   // Function to create a tweet
   const createTweet = async (originalText: string) => {
     try {
@@ -109,8 +205,18 @@ export function useTweets() {
           user_id: 1
         };
         
-        // Update tweets list
-        setTweets(prevTweets => [newTweet, ...prevTweets]);
+        // Update tweets list if we're on the first page
+        if (currentPage === 1) {
+          setTweets(prevTweets => [newTweet, ...prevTweets.slice(0, tweetsPerPage - 1)]);
+        }
+        
+        // Update counts
+        setTotalTweets(prev => prev + 1);
+        setTweetCounts(prev => ({
+          ...prev,
+          total: prev.total + 1,
+          perfect: prev.perfect + 1
+        }));
         
         return newTweet;
       }
@@ -144,8 +250,13 @@ export function useTweets() {
         const newTweet = await response.json();
         console.log("Tweet created successfully:", newTweet);
         
-        // Update tweets list - ensure it's added to the beginning
-        setTweets(prevTweets => [newTweet, ...prevTweets]);
+        // Update tweets list if we're on the first page
+        if (currentPage === 1) {
+          setTweets(prevTweets => [newTweet, ...prevTweets.slice(0, tweetsPerPage - 1)]);
+        }
+        
+        // Update counts
+        fetchTweetCounts();
         
         return newTweet;
       } catch (fetchError) {
@@ -162,8 +273,18 @@ export function useTweets() {
           user_id: 1
         };
         
-        // Update tweets list
-        setTweets(prevTweets => [newTweet, ...prevTweets]);
+        // Update tweets list if we're on the first page
+        if (currentPage === 1) {
+          setTweets(prevTweets => [newTweet, ...prevTweets.slice(0, tweetsPerPage - 1)]);
+        }
+        
+        // Update counts
+        setTotalTweets(prev => prev + 1);
+        setTweetCounts(prev => ({
+          ...prev,
+          total: prev.total + 1,
+          perfect: prev.perfect + 1
+        }));
         
         return newTweet;
       }
@@ -180,6 +301,9 @@ export function useTweets() {
     
     // Clear state
     setTweets([]);
+    setCurrentPage(1);
+    setTotalTweets(0);
+    setTweetCounts({ total: 0, perfect: 0, corrections: 0 });
     
     // Force a page refresh to clean any in-memory cache
     window.location.reload();
@@ -190,8 +314,16 @@ export function useTweets() {
     isLoading,
     error,
     createTweet,
-    refreshTweets: fetchTweets,
+    refreshTweets: () => fetchTweets(currentPage), // Refresh current page
     hardReset,
-    offlineMode
+    offlineMode,
+    // Pagination related
+    currentPage,
+    totalTweets,
+    tweetsPerPage,
+    totalPages: Math.ceil(totalTweets / tweetsPerPage),
+    changePage,
+    setTweetsPerPage,
+    tweetCounts
   };
 }

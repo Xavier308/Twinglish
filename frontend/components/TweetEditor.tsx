@@ -1,5 +1,5 @@
 // frontend/components/TweetEditor.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTweets, Tweet } from '../hooks/useTweets';
 
 interface TweetEditorProps {
@@ -9,8 +9,10 @@ interface TweetEditorProps {
 export default function TweetEditor({ onSuccess }: TweetEditorProps) {
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createTweet } = useTweets();
-  const [showTips, setShowTips] = useState(false);
+  const { createTweet, isLoading } = useTweets();
+
+  // No longer needed - removed effect for success message
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +20,11 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
     if (!text.trim() || isSubmitting) return;
     
     setIsSubmitting(true);
+    
     try {
       const newTweet = await createTweet(text);
       setText('');
+      
       if (onSuccess) {
         onSuccess(newTweet);
       }
@@ -46,26 +50,7 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
     <div className="tweet-editor">
       <div className="editor-header">
         <h2>Write in English</h2>
-        <button 
-          className="tips-button" 
-          onClick={() => setShowTips(!showTips)}
-          aria-expanded={showTips}
-        >
-          {showTips ? 'Hide Tips' : 'Show Tips'}
-        </button>
       </div>
-      
-      {showTips && (
-        <div className="tips-container">
-          <h3>How to make the most of Twinglish:</h3>
-          <ul>
-            <li>Write short sentences in English</li>
-            <li>Try to express your thoughts clearly</li>
-            <li>Don't worry about making mistakes - that's how we learn!</li>
-            <li>Review and learn from the corrections you receive</li>
-          </ul>
-        </div>
-      )}
       
       <form onSubmit={handleSubmit}>
         <div className="textarea-wrapper">
@@ -75,7 +60,7 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
             placeholder="What's on your mind? Write something in English..."
             maxLength={280}
             rows={4}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
           />
           <div className={`character-count ${getCharacterCountClass()}`}>
             <span>{calculateCharactersLeft()}</span>
@@ -85,10 +70,10 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
         <div className="button-row">
           <button 
             type="submit" 
-            disabled={!text.trim() || isSubmitting}
+            disabled={!text.trim() || isSubmitting || isLoading}
             className="submit-button"
           >
-            {isSubmitting ? (
+            {isSubmitting || isLoading ? (
               <>
                 <span className="spinner"></span>
                 <span>Processing...</span>
@@ -108,6 +93,7 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
           padding: 1.25rem;
           margin-bottom: 2rem;
           border: 1px solid var(--border-color);
+          position: relative;
         }
         
         .editor-header {
@@ -123,51 +109,7 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
           color: var(--text-primary);
         }
         
-        .tips-button {
-          background: none;
-          border: none;
-          color: var(--primary-color);
-          font-size: 0.9rem;
-          cursor: pointer;
-          padding: 0.4rem 0.75rem;
-          border-radius: 4px;
-          font-weight: 500;
-          transition: background-color 0.2s;
-        }
-        
-        .tips-button:hover {
-          background-color: var(--primary-light);
-        }
-        
-        .tips-container {
-          background-color: var(--bg-container);
-          border-radius: 8px;
-          padding: 1rem;
-          margin-bottom: 1.25rem;
-          border-left: 4px solid var(--primary-color);
-        }
-        
-        .tips-container h3 {
-          margin-top: 0;
-          margin-bottom: 0.75rem;
-          font-size: 1rem;
-          color: var(--text-primary);
-        }
-        
-        .tips-container ul {
-          margin: 0;
-          padding-left: 1.5rem;
-          color: var(--text-primary);
-        }
-        
-        .tips-container li {
-          margin-bottom: 0.5rem;
-          font-size: 0.95rem;
-        }
-        
-        .tips-container li:last-child {
-          margin-bottom: 0;
-        }
+        /* Success message styles removed */
         
         .textarea-wrapper {
           position: relative;
@@ -280,11 +222,6 @@ export default function TweetEditor({ onSuccess }: TweetEditorProps) {
             flex-direction: column;
             align-items: flex-start;
             gap: 0.5rem;
-          }
-          
-          .tips-button {
-            padding: 0.3rem 0.5rem;
-            font-size: 0.85rem;
           }
           
           .submit-button {

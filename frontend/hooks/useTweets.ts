@@ -269,10 +269,8 @@ export function useTweets() {
           user_id: 1
         };
         
-        // Update tweets list if we're on the first page
-        if (currentPage === 1) {
-          setTweets(prevTweets => [newTweet, ...prevTweets.slice(0, tweetsPerPage - 1)]);
-        }
+        // Update tweets list immediately - don't check page
+        setTweets(prevTweets => [newTweet, ...prevTweets]);
         
         // Update counts
         setTotalTweets(prev => prev + 1);
@@ -295,6 +293,9 @@ export function useTweets() {
         throw new Error('Not authenticated');
       }
       
+      // Set loading state to true while creating tweet
+      setIsLoading(true);
+      
       try {
         const response = await fetch(`${apiUrl}/api/v1/tweets/`, {
           method: 'POST',
@@ -313,9 +314,12 @@ export function useTweets() {
         const newTweet = await response.json();
         console.log("Tweet created successfully:", newTweet);
         
-        // Update tweets list if we're on the first page
-        if (currentPage === 1) {
-          setTweets(prevTweets => [newTweet, ...prevTweets.slice(0, tweetsPerPage - 1)]);
+        // Always update tweets list with new tweet at the top, regardless of current page
+        setTweets(prevTweets => [newTweet, ...prevTweets]);
+        
+        // If not on first page, go to first page to show the new tweet
+        if (currentPage !== 1) {
+          changePage(1);
         }
         
         // Update counts
@@ -336,10 +340,8 @@ export function useTweets() {
           user_id: 1
         };
         
-        // Update tweets list if we're on the first page
-        if (currentPage === 1) {
-          setTweets(prevTweets => [newTweet, ...prevTweets.slice(0, tweetsPerPage - 1)]);
-        }
+        // Update tweets list immediately - don't check page
+        setTweets(prevTweets => [newTweet, ...prevTweets]);
         
         // Update counts
         setTotalTweets(prev => prev + 1);
@@ -350,12 +352,15 @@ export function useTweets() {
         }));
         
         return newTweet;
+      } finally {
+        // Reset loading state
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error creating tweet:', error);
       throw error;
     }
-  }, [tweets, currentPage, tweetsPerPage, offlineMode, fetchTweetCounts]);
+  }, [tweets, currentPage, offlineMode, fetchTweetCounts, changePage]);
 
   // Function to refresh current page of tweets
   const refreshTweets = useCallback(() => {

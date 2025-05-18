@@ -1,5 +1,5 @@
 // frontend/hooks/useTweets.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface Tweet {
   id: number;
@@ -39,21 +39,27 @@ export function useTweets() {
   });
   const [totalTweets, setTotalTweets] = useState(0);
   const [tweetCounts, setTweetCounts] = useState<TweetCounts>({ total: 0, perfect: 0, corrections: 0 });
+  
+  // Track active requests to handle concurrency
+  const activeRequest = useRef<AbortController | null>(null);
+  const isChangingPage = useRef(false);
 
   // Clear any localStorage cached tweets on first load
   useEffect(() => {
     // Clear all localStorage items that might contain tweets
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.includes('tweet') || key.includes('mock'))) {
-        localStorage.removeItem(key);
+    if (typeof window !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('tweet') || key.includes('mock'))) {
+          localStorage.removeItem(key);
+        }
       }
+      
+      // Also remove any other potential cache keys
+      localStorage.removeItem('twinglish-tweets');
+      localStorage.removeItem('tweets');
+      localStorage.removeItem('offlineTweets');
     }
-    
-    // Also remove any other potential cache keys
-    localStorage.removeItem('twinglish-tweets');
-    localStorage.removeItem('tweets');
-    localStorage.removeItem('offlineTweets');
     
     // Now fetch tweets from server
     fetchTweets();
@@ -61,7 +67,7 @@ export function useTweets() {
   }, []);
 
   // Function to fetch tweet counts
-  const fetchTweetCounts = async () => {
+  const fetchTweetCounts = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('authToken');
@@ -71,6 +77,8 @@ export function useTweets() {
       }
       
       try {
+        const controller = new AbortController();
+        
         const response = await fetch(`${apiUrl}/api/v1/tweets/count`, {
           method: 'GET',
           headers: {
@@ -78,7 +86,7 @@ export function useTweets() {
             'Authorization': `Bearer ${token}`,
           },
           cache: 'no-store',
-          signal: AbortSignal.timeout(5000)
+          signal: controller.signal
         });
         
         if (!response.ok) {
@@ -88,17 +96,33 @@ export function useTweets() {
         const counts = await response.json();
         setTweetCounts(counts);
         setTotalTweets(counts.total);
+        
+        console.log('Tweet counts fetched:', counts);
       } catch (fetchError) {
+        if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+          console.log('Fetch aborted');
+          return;
+        }
+        
         console.warn('API fetch error for counts:', fetchError);
         setOfflineMode(true);
       }
     } catch (err) {
       console.error('Error fetching tweet counts:', err);
     }
-  };
+  }, []);
 
-  // Function to fetch tweets with pagination
-  const fetchTweets = async (page: number = 1) => {
+  // Function to fetch tweets with pagination and better concurrency handling
+  const fetchTweets = useCallback(async (page: number = 1) => {
+    // Cancel any active request
+    if (activeRequest.current) {
+      activeRequest.current.abort();
+      activeRequest.current = null;
+    }
+    
+    // Set a flag indicating we're changing pages
+    isChangingPage.current = true;
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -113,6 +137,10 @@ export function useTweets() {
       }
       
       try {
+        // Create a new abort controller
+        const controller = new AbortController();
+        activeRequest.current = controller;
+        
         // Calculate skip based on page and limit
         const skip = (page - 1) * tweetsPerPage;
         
@@ -124,7 +152,7 @@ export function useTweets() {
             'Authorization': `Bearer ${token}`,
           },
           cache: 'no-store',
-          signal: AbortSignal.timeout(5000)
+          signal: controller.signal
         });
         
         if (!response.ok) {
@@ -133,44 +161,72 @@ export function useTweets() {
         
         let data = await response.json();
         
-        // Update current page
-        setCurrentPage(page);
-        
         console.log(`Fetched ${data.length} tweets for page ${page}`);
-        setTweets(data);
-        setOfflineMode(false);
+        
+        // Only update state if this request is still active
+        if (activeRequest.current === controller) {
+          setTweets(data);
+          setCurrentPage(page);
+          setOfflineMode(false);
+          activeRequest.current = null;
+        }
       } catch (fetchError) {
+        // Ignore aborted requests
+        if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+          console.log('Fetch aborted');
+          return;
+        }
+        
         console.warn('API fetch error:', fetchError);
-        // Start with a completely empty array
         setTweets([]);
         setOfflineMode(true);
       }
     } catch (err) {
       console.error('Error in tweet handling:', err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
-      // Start with an empty array
       setTweets([]);
       setOfflineMode(true);
     } finally {
       setIsLoading(false);
+      isChangingPage.current = false;
     }
-  };
+    
+    return true;
+  }, [tweetsPerPage]);
 
-  // Change page function
-  const changePage = (page: number) => {
+  // Change page function with better synchronization
+  const changePage = useCallback((page: number) => {
+    // If we're already changing pages, don't trigger another change
+    if (isChangingPage.current) {
+      console.log('Page change in progress, ignoring request');
+      return;
+    }
+    
+    console.log('Changing page to:', page);
+    
     if (page < 1) page = 1;
-    const maxPages = Math.ceil(totalTweets / tweetsPerPage);
+    
+    // Calculate the max pages based on total tweets and tweets per page
+    const maxPages = Math.max(1, Math.ceil(totalTweets / tweetsPerPage));
+    
     if (page > maxPages) page = maxPages;
     
-    fetchTweets(page);
-  };
+    console.log('Final page to fetch:', page, 'maxPages:', maxPages);
+    
+    // Only fetch if the page is different
+    if (page !== currentPage) {
+      fetchTweets(page);
+    }
+  }, [totalTweets, tweetsPerPage, currentPage, fetchTweets]);
 
   // Function to set tweets per page
-  const setTweetsPerPage = (count: number) => {
+  const setTweetsPerPage = useCallback((count: number) => {
     // Valid values: 5, 10, 20, 50
     if (![5, 10, 20, 50].includes(count)) {
       count = 10; // Default to 10 if invalid
     }
+    
+    console.log('Setting tweets per page to:', count);
     
     // Store the value in localStorage for persistence
     if (typeof localStorage !== 'undefined') {
@@ -181,15 +237,23 @@ export function useTweets() {
     setTweetsPerPageState(count);
     
     // Recalculate current page to keep the view consistent
-    const newTotalPages = Math.ceil(totalTweets / count);
+    const newTotalPages = Math.max(1, Math.ceil(totalTweets / count));
     const newPage = Math.min(currentPage, newTotalPages);
+    
+    console.log('After changing items per page, new page:', newPage, 'of', newTotalPages);
+    
+    // Cancel any active request
+    if (activeRequest.current) {
+      activeRequest.current.abort();
+      activeRequest.current = null;
+    }
     
     // Fetch tweets with new pagination
     fetchTweets(newPage);
-  };
+  }, [totalTweets, currentPage, fetchTweets]);
 
   // Function to create a tweet
-  const createTweet = async (originalText: string) => {
+  const createTweet = useCallback(async (originalText: string) => {
     try {
       // For offline mode, create a basic tweet
       if (offlineMode) {
@@ -239,8 +303,7 @@ export function useTweets() {
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ original_text: originalText }),
-          cache: 'no-store',
-          signal: AbortSignal.timeout(5000)
+          cache: 'no-store'
         });
         
         if (!response.ok) {
@@ -292,12 +355,19 @@ export function useTweets() {
       console.error('Error creating tweet:', error);
       throw error;
     }
-  };
+  }, [tweets, currentPage, tweetsPerPage, offlineMode, fetchTweetCounts]);
+
+  // Function to refresh current page of tweets
+  const refreshTweets = useCallback(() => {
+    fetchTweets(currentPage);
+  }, [fetchTweets, currentPage]);
 
   // Hard reset function to clear everything
-  const hardReset = () => {
+  const hardReset = useCallback(() => {
     // Clear all localStorage
-    localStorage.clear();
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+    }
     
     // Clear state
     setTweets([]);
@@ -306,22 +376,24 @@ export function useTweets() {
     setTweetCounts({ total: 0, perfect: 0, corrections: 0 });
     
     // Force a page refresh to clean any in-memory cache
-    window.location.reload();
-  };
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }, []);
 
   return {
     tweets,
     isLoading,
     error,
     createTweet,
-    refreshTweets: () => fetchTweets(currentPage), // Refresh current page
+    refreshTweets,
     hardReset,
     offlineMode,
     // Pagination related
     currentPage,
     totalTweets,
     tweetsPerPage,
-    totalPages: Math.ceil(totalTweets / tweetsPerPage),
+    totalPages: Math.max(1, Math.ceil(totalTweets / tweetsPerPage)),
     changePage,
     setTweetsPerPage,
     tweetCounts

@@ -222,6 +222,7 @@ export default function Pagination({
           
           .pagination-container {
             flex-direction: column;
+            gap: 0.75rem;
           }
           
           .pagination-button {

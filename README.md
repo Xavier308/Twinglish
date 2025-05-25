@@ -1,5 +1,7 @@
 # Twinglish
 
+![Twinglish](https://github.com/Xavier308/Assets/raw/main/Twinglish/twinglish-dashboard.png)
+
 Twinglish is a Twitter-style web application where users can post short messages in English (and later other languages) and receive instant AI-powered corrections and style feedback. The goal is to create a fun, safe, judgment-free space to practice writing and build confidence.
 
 ## Technology Stack
